@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Smart Pump Selector</title>
+  <link rel="stylesheet" href="assets/styles.css">
+  <!-- PDF Library for Print Functionality -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  
+  <script src="scripts/cloud-sync.js"></script>
+  <script src="scripts/database.js" defer></script>
+  <script src="scripts/selector.js" defer></script>
+  
+  <script>
+    // Initialize Firebase and Cloud Sync
+    window.addEventListener('DOMContentLoaded', async () => {
+      // Firebase config
+      const firebaseConfig = {
+        apiKey: "AIzaSyDZLujiFxX-BJ98bRiNKv5VYYYfpwG0Yn4",
+        authDomain: "pumpselector-74a7a.firebaseapp.com",
+        projectId: "pumpselector-74a7a",
+        storageBucket: "pumpselector-74a7a.firebasestorage.app",
+        messagingSenderId: "189246777584",
+        appId: "1:189246777584:web:a4165d94ee76283d3dba35",
+        measurementId: "G-WMD6QW8670"
+      };
+      
+      // Initialize cloud sync
+      if (typeof cloudSync !== 'undefined') {
+        cloudSync.setConfig(firebaseConfig);
+        await cloudSync.init();
+      }
+    });
+  </script>
+  <style>
+    .back-button {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      background-color: #ffcc00;
+      color: #003366;
+      border: none;
+      padding: 10px 20px;
+      font-size: 1em;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: 2px 2px 8px rgba(0,0,0,0.2);
+      transition: background-color 0.3s ease;
+    }
+    .back-button:hover {
+      background-color: #ffd633;
+    }
+  </style>
+</head>
+<body>
+  <button class="back-button" onclick="window.location.href='index.html'">← Back</button>
+
+  <div class="selection-container">
+    <img src="assets/haveels2.png" alt="Havells Logo" class="logo">
+    <h1>Smart Pump Selector</h1>
+    <p>Select your mode and fill in the details. We’ll recommend the best pump.</p>
+
+    <div class="mode-toggle">
+      <button id="simpleBtn" class="neumorphic-button" onclick="setMode('simple')">🧑‍🌾 Simple Mode (सरल मोड)</button>
+      <button id="advancedBtn" class="neumorphic-button" onclick="setMode('advanced')">🧑‍🔬 Advanced Mode (उन्नत मोड)</button>
+    </div>
+
+    <form id="pumpForm">
+      <!-- Simple Mode -->
+      <div id="simpleMode" class="mode-section" style="display: block;">
+       <label for="purposeSelect">Where do you want to put the pump? (आप पंप कहाँ लगाना चाहते हैं?)</label>
+<select id="purpose" name="purpose">
+  <option value="">Select where to put pump (पंप कहाँ लगाना है चुनें)</option>
+  <option value="house">For home use (घर के लिए)</option>
+  <option value="agriculture">For agriculture (कृषि के लिए)</option>
+  <option value="construction">For construction (निर्माण स्थल पर)</option>
+  <option value="mall">Inside shopping mall (शॉपिंग मॉल के अंदर)</option>
+  <option value="building">Inside multi-story building (मल्टीस्टोरी बिल्डिंग के अंदर)</option>
+</select>
+
+
+        <label>Why do you need pump (पंप की आवश्यकता क्यों है)</label>
+        <select name="location">
+          <option value="">Select why you need pump (पंप की आवश्यकता क्यों है चुनें)</option>
+          <option value="sewage">For sewage transfer (सीवेज के लिए)</option>
+          <option value="roof">Water transfer to root tank (पानी को छत की टंकी में ले जाना है)</option>
+          <option value="pressure">For water pressure in bathroom/kitchen/Fountain (बाथरूम/रसोई/फव्वारा में पानी प्रेशर के लिए)</option>
+          <option value="sprinkler">For sprinkler (स्प्रिंकलर के लिए)</option>
+          <option value="farming" id="farmingOption">For farming (खेती के लिए)</option>
+
+        </select>
+
+        <label>Where is the water coming from (पानी कहाँ से आ रहा है)</label>
+        <select name="source" id="sourceSelect">
+          <option value="">Select water source (पानी का स्रोत चुनें)</option>
+          <option value="open well">Open well (खुला कुआं)</option>
+          <option value="borewell">Borewell (बोरवेल)</option>
+          <option value="river">River/Bomba (नदी/बॉम्बा)</option>
+          <option value="underground tank">Underground tank (भूमिगत टैंक)</option>
+          <option value="municipal">Municipal pipeline (नगरपालिका पाइपलाइन)</option>
+          <option value="pond">Pond (तालाब)</option>
+          <option value="hospital">For hospital sewage (अस्पताल की सीवेज)</option>
+          <option value="hotel">For hotels sewage (होटल की सीवेज)</option>
+          <option value="industry">For industry sewage (उद्योग की सीवेज)</option>
+          <option value="home">For home sewage (घर की सीवेज)</option>
+          <option value="mall">For mall/shopping complex sewage (मॉल/शॉपिंग कॉम्प्लेक्स की सीवेज)</option>>
+          <option value="roof-tank" id="roofTankOption" style="display:none;">From roof tank (छत की टंकी से)</option>
+          <!-- Keep other options too, they'll be hidden dynamically -->
+        </select>
+
+        <label id="constructionSourceLabel" style="display:none;">Where is the water coming from for construction (निर्माण के लिए पानी कहाँ से आ रहा है)</label>
+        <select id="constructionSourceSelect" style="display:none;"></select>
+
+    <label for="waterLevelSelect">Water level from ground (ज़मीन से पानी के लेवल तक गहराई)</label>
+<select id="waterLevelSelect" name="waterLevel">
+  <option value="">Select water level (पानी का लेवल चुनें)</option>
+  <option value="0-5">(0–5) foot from ground (०–५ फुट ज़मीन से नीचे)</option>
+  <option value="5-20">(5–20) foot from ground (५–२० फुट ज़मीन से नीचे)</option>
+  <option value="20-28">(20–28) foot from ground (२०–२८ फुट ज़मीन से नीचे)</option>
+  <option value="28-50">(28–50) foot from ground (२८–५० फुट ज़मीन से नीचे)</option>
+  <option value="50-100">(50–100) foot from ground (५०–१०० फुट ज़मीन से नीचे)</option>
+  <option value="100-200">(100–200) foot from ground (१००–२०० फुट ज़मीन से नीचे)</option>
+  <option value="200-350">(200–350) foot from ground (२००–३५० फुट ज़मीन से नीचे)</option>
+  <option value="350-500">(350–500) foot from ground (३५०–५०० फुट ज़मीन से नीचे)</option>
+  <option value="500-700">(500–700) foot from ground (५००–७०० फुट ज़मीन से नीचे)</option>
+</select>
+
+
+        <label id="deliveryLabel">Where do you want the water to reach (पानी कहाँ तक पहुंचाना है)</label>
+        <select name="delivery" id="deliverySelect">
+          <option value="">Select delivery location (पानी पहुंचाने की जगह चुनें)</option>
+          <option value="ground">Ground level (जमीन स्तर)</option>
+          <option value="floor1">1st floor (~10 ft) (पहली मंजिल)</option>
+          <option value="floor2">2nd floor (~20 ft) (दूसरी मंजिल)</option>
+          <option value="floor3">3rd floor (~30 ft) (तीसरी मंजिल)</option>
+          <option value="floor4">4th floor (~40 ft) (चौथी मंजिल)</option>
+          <option value="custom">Above 4th floor (चौथी मंजिल से ऊपर)</option>
+        </select>
+
+        <label id="faucetsLabel" style="display:none;">In how many faucets need pressure water (कितने नलों में प्रेशर वाले पानी की आवश्यकता है)</label>
+        <select name="faucets" id="faucetsSelect" style="display:none;">
+          <option value="">Select faucet count (नलों की संख्या चुनें)</option>
+          <option value="1">Single faucet (एक नल)</option>
+          <option value="2">Two faucets (दो नल)</option>
+          <option value="4">Four faucets (चार नल)</option>
+          <option value="6">Six faucets (छह नल)</option>
+          <option value="8">Eight faucets (आठ नल)</option>
+        </select>
+            
+        <div id="heightDropdownBox" style="display:none; margin-top: 10px;">
+          <label>Select height from ground (फुट में ऊँचाई चुनें)</label>
+          <select name="customHeight">
+            <option value="">Select height (ऊँचाई चुनें)</option>
+            <option value="100">100 ft from ground (100 फुट)</option>
+            <option value="150">150 ft from ground (150 फुट)</option>
+            <option value="200">200 ft from ground (200 फुट)</option>
+            <option value="300">300 ft from ground (300 फुट)</option>
+            <option value="450">450 ft from ground (450 फुट)</option>
+            <option value="600">600 ft from ground (600 फुट)</option>
+            <option value="800">800 ft from ground (800 फुट)</option>
+            <option value="1000">1000 ft from ground (1000 फुट)</option>
+          </select>
+        </div>
+
+        <label>How much water is required (कितना पानी चाहिए)</label>
+        <select name="usage">
+          <option value="">Select water requirement (पानी की आवश्यकता चुनें)</option>
+          <option value="500L-30min">500L tank in half-an-hour (आधा घंटे में 500 लीटर)</option>
+          <option value="1000L-30min">1000L tank in half-an-hour (आधा घंटे में 1000 लीटर)</option>
+          <option value="1500L-30min">1500L tank in half-an-hour (आधा घंटे में 1500 लीटर)</option>
+          <option value="2000L-60min">2000L tank in one hour (एक घंटे में 2000 लीटर)</option>
+          <option value="3000L-60min">3000L tank in one hour (एक घंटे में 3000 लीटर)</option>
+          <option value="1bigha-60min">One bigha farm in one hour (एक बीघा खेत एक घंटे में)</option>
+          <option value="3bigha-60min">Three bigha farm in one hour (तीन बीघा खेत एक घंटे में)</option>
+          <option value="6bigha-60min">Six bigha farm in one hour (छह बीघा खेत एक घंटे में)</option>
+        </select>
+
+        <label>Power supply voltage (वोल्टेज सेलेक्ट करें)</label>
+        <select name="phase">
+          <option value="">Select voltage (वोल्टेज चुनें)</option>
+          <option value="140">140V - Single phase (कम वोल्टेज)</option>
+          <option value="220">220V - Single phase (सिंगल फेज)</option>
+          <option value="380">380V - Two phase (डबल फेज)</option>
+          <option value="415">415V - Three phase (तीन फेज)</option>
+        </select>
+
+        <label>Pump quality required (पंप की क्वालिटी)</label>
+        <select name="quality">
+          <option value="">Select quality (क्वालिटी चुनें)</option>
+          <option value="premium">Premium (प्रीमियम)</option>
+          <option value="standard">Standard (स्टैंडर्ड)</option>
+          <option value="economical">Economical (किफायती)</option>
+        </select>
+      </div>
+
+      <!-- Advanced Mode -->
+<div id="advancedMode" class="mode-section" style="display:none;">
+
+  <!-- ✅ Shared dropdowns copied from Simple Mode -->
+  <label for="purposeSelect">Where do you want to put the pump? (आप पंप कहाँ लगाना चाहते हैं?)</label>
+  <select id="purpose" name="purpose">
+    <option value="">Select where to put pump (पंप कहाँ लगाना है चुनें)</option>
+    <option value="house">For home use (घर के लिए)</option>
+    <option value="agriculture">For agriculture (कृषि के लिए)</option>
+    <option value="construction">For construction (निर्माण स्थल पर)</option>
+    <option value="mall">Inside shopping mall (शॉपिंग मॉल के अंदर)</option>
+    <option value="building">Inside multi-story building (मल्टीस्टोरी बिल्डिंग के अंदर)</option>
+  </select>
+
+  <label>Which Pump do you need (आपको कौन सा पंप चाहिए)</label>
+  <select name="location">
+    <option value="">Select pump type (पंप प्रकार चुनें)</option>
+    <option value="Priming">Self Priming mini-monoblock pump</option>
+    <option value="centrifugale">Centrifugale pump</option>
+    <option value="SStage">Single stage pressure pump</option>
+    <option value="MStage">Multi-stage booster pump</option>
+    <option value="opwell">Openwell pump</option>
+    <option value="3borwp">3inch borewell pump</option>
+    <option value="4borwp">4inch borewell pump</option>
+    <option value="5borwp">5inch borewell pump</option>
+    <option value="6borwp">6inch borewell pump</option>
+    <option value="7borwp">7inch borewell pump</option>
+    <option value="8borwp">8inch borewell pump</option>
+    <option value="shallow">Shallow well jet pump</option>
+    <option value="deepwell">deepwell jet pump</option>
+    <option value="a1sewage">Sewage pump</option>
+    <option value="cutterpump">Cutter pump</option>
+    <option value="dewatering">De-watering pump</option>
+    <option value="circulatingpump">In line circulating pump</option>
+    <option value="cpfwfp">Control panel for water filled pump</option>
+  </select>
+
+  <!-- Advanced-only inputs -->
+  <label for="hpSelect">Required HP (आवश्यक हॉर्सपावर)</label>
+<select name="hp" id="hpSelect">
+  <option value="">Select HP (हॉर्सपावर चुनें)</option>
+  <option value="0.5">0.5 HP</option>
+  <option value="1.0">1.0 HP</option>
+  <option value="1.5">1.5 HP</option>
+  <option value="2.0">2.0 HP</option>
+  <option value="3.0">3.0 HP</option>
+  <option value="5.0">5.0 HP</option>
+  <option value="7.5">7.5 HP</option>
+  <option value="10">10 HP</option>
+  <option value="12.5">12.5 HP</option>
+  <option value="15">15 HP</option>
+  <option value="17.5">17.5 HP</option>
+  <option value="20.0">20.0 HP</option>
+  <option value="25.0">25.0 HP</option>
+  <option value="30">30 HP</option>
+</select>
+
+
+<div id="stageBox" style="display: none;">
+  <label for="stageSelect">Pump Stages (पंप स्टेज)</label>
+  <select name="stages" id="stageSelect">
+    <option value="">Select stages (स्टेज चुनें)</option>
+    <option value="1">1 Stage</option>
+    <option value="2">2 Stage</option>
+    <option value="3">3 Stage</option>
+    <option value="4">4 Stage</option>
+    <option value="6">6 Stage</option>
+    <option value="7">7 Stage</option>
+    <option value="8">8 Stage</option>
+    <option value="9">9 Stage</option>
+    <option value="10">10 Stage</option>
+    <option value="12">12 Stage</option>
+    <option value="13">13 Stage</option>
+    <option value="14">14 Stage</option>
+    <option value="15">15 Stage</option>
+    <option value="16">16 Stage</option>
+    <option value="18">18 Stage</option>
+    <option value="20">20 Stage</option>
+    <option value="21">21 Stage</option>
+    <option value="22">22 Stage</option>
+    <option value="24">24 Stage</option>
+    <option value="25">25 Stage</option>
+    <option value="27">27 Stage</option>
+    <option value="30">30 Stage</option>
+    <option value="32">32 Stage</option>
+    <option value="35">35 Stage</option>
+    <option value="40">40 Stage</option>
+    <option value="50">50 Stage</option>
+  </select>
+</div>
+
+
+
+  <label>Total height (From water level to water discharge) (कुल ऊंचाई [जल स्तर से जल निकास तक])</label>
+  <input type="number" name="head">
+
+  <label>Required Flow (LPM) (आवश्यक प्रवाह)</label>
+  <input type="number" name="flow">
+</div>
+    </form>
+
+    <div class="action-buttons">
+      <button type="submit" form="pumpForm">🔍 Get Recommendation</button>
+      <button type="reset" form="pumpForm">🔄 Reset Form</button>
+    </div>
+  <div style="text-align:center; margin: 12px 0 0; color:#cc5500; font-weight:bold;">
+    Contact for Customer Support - 9873441650
+  </div>
+
+    <div id="resultBox"></div>
+  </div>
+</body>
+</html>
