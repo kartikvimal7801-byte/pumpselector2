@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>View Database Files - Admin Panel</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(to right, #004080, #0073e6);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .database-container {
+      background-color: rgba(255, 255, 255, 0.95);
+      border-radius: 20px;
+      padding: 40px;
+      max-width: 1000px;
+      margin: 0 auto;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+      animation: slideIn 0.5s ease-out;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+    }
+
+    .header h1 {
+      color: #003366;
+      font-size: 2em;
+    }
+
+    .back-button {
+      background-color: #ffcc00;
+      color: #003366;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1em;
+      font-weight: bold;
+      transition: background-color 0.3s ease;
+    }
+
+    .back-button:hover {
+      background-color: #ffd633;
+    }
+
+    .file-list {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .file-item {
+      background-color: #f9f9f9;
+      border: 2px solid #e0e0e0;
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: all 0.3s ease;
+    }
+
+    .file-item.for-selection {
+      border-left: 4px solid #2196f3;
+    }
+
+    .file-item.for-spares {
+      border-left: 4px solid #ff9800;
+    }
+
+    .file-item.for-both {
+      border-left: 4px solid #9c27b0;
+    }
+
+    .file-info {
+      flex: 1;
+    }
+
+    .file-name {
+      font-size: 1.1em;
+      font-weight: 600;
+      color: #003366;
+      margin-bottom: 5px;
+    }
+
+    .file-meta {
+      font-size: 0.9em;
+      color: #666;
+    }
+
+    .file-status {
+      display: inline-block;
+      padding: 5px 12px;
+      border-radius: 12px;
+      font-size: 0.85em;
+      font-weight: 600;
+      margin-left: 10px;
+    }
+
+    .status-selection {
+      background-color: #2196f3;
+      color: white;
+    }
+
+    .status-spares {
+      background-color: #ff9800;
+      color: white;
+    }
+
+    .status-both {
+      background-color: #9c27b0;
+      color: white;
+    }
+
+    .status-none {
+      background-color: #9e9e9e;
+      color: white;
+    }
+
+    .file-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .action-button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.9em;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+
+    .for-selection-button {
+      background-color: #2196f3;
+      color: white;
+    }
+
+    .for-selection-button:hover {
+      background-color: #1976d2;
+      transform: scale(1.05);
+    }
+
+    .for-selection-button.active {
+      background-color: #4caf50;
+    }
+
+    .for-spares-button {
+      background-color: #ff9800;
+      color: white;
+    }
+
+    .for-spares-button:hover {
+      background-color: #f57c00;
+      transform: scale(1.05);
+    }
+
+    .for-spares-button.active {
+      background-color: #4caf50;
+    }
+
+    .view-button {
+      background-color: #2196f3;
+      color: white;
+    }
+
+    .view-button:hover {
+      background-color: #1976d2;
+      transform: scale(1.05);
+    }
+
+    .delete-button {
+      background-color: #f44336;
+      color: white;
+    }
+
+    .delete-button:hover {
+      background-color: #d32f2f;
+      transform: scale(1.05);
+    }
+
+    .download-button {
+      background-color: #4caf50;
+      color: white;
+    }
+
+    .download-button:hover {
+      background-color: #45a049;
+      transform: scale(1.05);
+    }
+
+
+    .no-files {
+      text-align: center;
+      padding: 40px;
+      color: #666;
+      font-size: 1.1em;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #003366;
+      font-size: 1.1em;
+    }
+
+    .error-message {
+      background-color: #ffebee;
+      color: #c62828;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-size: 0.9em;
+      display: none;
+      border-left: 4px solid #c62828;
+    }
+
+    .error-message.show {
+      display: block;
+    }
+
+    .success-message {
+      background-color: #e8f5e9;
+      color: #2e7d32;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-size: 0.9em;
+      display: none;
+      border-left: 4px solid #2e7d32;
+    }
+
+    .success-message.show {
+      display: block;
+    }
+
+    .file-details {
+      margin-top: 15px;
+      padding: 15px;
+      background-color: #f5f5f5;
+      border-radius: 8px;
+      display: none;
+    }
+
+    .file-details.show {
+      display: block;
+    }
+
+    .details-header {
+      font-weight: 600;
+      color: #003366;
+      margin-bottom: 10px;
+      font-size: 1em;
+    }
+
+    .columns-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .column-card {
+      background-color: white;
+      padding: 12px;
+      border-radius: 6px;
+      border-left: 3px solid #2196f3;
+    }
+
+    .column-name {
+      font-weight: 600;
+      color: #003366;
+      margin-bottom: 5px;
+      font-size: 0.95em;
+    }
+
+    .column-values {
+      font-size: 0.85em;
+      color: #666;
+      max-height: 100px;
+      overflow-y: auto;
+    }
+
+    .column-value-item {
+      padding: 2px 0;
+    }
+
+    .models-section {
+      margin-top: 15px;
+      padding: 12px;
+      background-color: #e8f5e9;
+      border-radius: 6px;
+      border-left: 3px solid #4caf50;
+    }
+
+    .models-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .model-badge {
+      background-color: #4caf50;
+      color: white;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 0.85em;
+      font-weight: 500;
+    }
+
+    .toggle-details-button {
+      background-color: #9e9e9e;
+      color: white;
+      margin-left: 10px;
+    }
+
+    .toggle-details-button:hover {
+      background-color: #757575;
+    }
+  </style>
+</head>
+<body>
+  <div class="database-container">
+    <div class="header">
+      <h1>👁️ Database Files</h1>
+      <button class="back-button" onclick="window.location.href='admin-panel.html'">← Back</button>
+    </div>
+
+    <div class="error-message" id="errorMessage"></div>
+    <div class="success-message" id="successMessage"></div>
+
+    <div id="filesContent">
+      <div class="loading">Loading database files...</div>
+    </div>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  
+  <!-- SheetJS library for Excel export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  
+  <script src="scripts/cloud-sync.js"></script>
+  <script src="scripts/database.js"></script>
+  <script src="scripts/auth.js"></script>
+  
+  <script>
+    // Initialize Firebase and Cloud Sync
+    window.addEventListener('DOMContentLoaded', async () => {
+      // Firebase config
+      const firebaseConfig = {
+        apiKey: "AIzaSyDZLujiFxX-BJ98bRiNKv5VYYYfpwG0Yn4",
+        authDomain: "pumpselector-74a7a.firebaseapp.com",
+        projectId: "pumpselector-74a7a",
+        storageBucket: "pumpselector-74a7a.firebasestorage.app",
+        messagingSenderId: "189246777584",
+        appId: "1:189246777584:web:a4165d94ee76283d3dba35",
+        measurementId: "G-WMD6QW8670"
+      };
+      
+      // Initialize cloud sync
+      if (typeof cloudSync !== 'undefined') {
+        cloudSync.setConfig(firebaseConfig);
+        await cloudSync.init();
+        
+        // Sync from cloud on page load (only once)
+        if (cloudSync.syncEnabled && typeof pumpDB !== 'undefined') {
+          try {
+            await pumpDB.init();
+            await cloudSync.syncFromCloudToLocal(pumpDB);
+            // Reload files after sync (skip cloud sync to prevent loop)
+            if (typeof loadDatabaseFiles === 'function') {
+              // Small delay to ensure sync completes
+              setTimeout(() => {
+                loadDatabaseFiles();
+              }, 500);
+            }
+          } catch (error) {
+            console.warn('Cloud sync failed:', error);
+            // Still load files even if sync fails
+            if (typeof loadDatabaseFiles === 'function') {
+              loadDatabaseFiles();
+            }
+          }
+        } else {
+          // Load files even if cloud sync is not enabled
+          if (typeof loadDatabaseFiles === 'function') {
+            loadDatabaseFiles();
+          }
+        }
+      }
+    });
+  </script>
+  <script>
+    // Check if user is admin
+    window.addEventListener('DOMContentLoaded', async () => {
+      if (!authManager.isAdmin()) {
+        alert('Access denied. Admin privileges required.');
+        window.location.href = 'index.html';
+        return;
+      }
+
+      // Force a sync when page loads to get latest from cloud
+      if (typeof cloudSync !== 'undefined' && cloudSync.syncEnabled && typeof pumpDB !== 'undefined') {
+        try {
+          await cloudSync.syncFromCloudToLocal(pumpDB);
+        } catch (error) {
+          console.warn('Sync on page load failed:', error);
+        }
+      }
+      
+      await loadDatabaseFiles();
+    });
+
+    async function loadDatabaseFiles() {
+      try {
+        // Skip cloud sync to prevent infinite loop (sync happens on page load)
+        const files = await pumpDB.getAllDatabaseFiles(true);
+        const filesContent = document.getElementById('filesContent');
+
+        if (files.length === 0) {
+          filesContent.innerHTML = '<div class="no-files">No database files found. <a href="upload-database.html">Upload a file</a> to get started.</div>';
+          return;
+        }
+
+        let filesHTML = '<div class="file-list">';
+
+        files.forEach(file => {
+          const date = new Date(file.timestamp).toLocaleString();
+          const forSelection = file.forSelection || false;
+          const forSpares = file.forSpares || false;
+          
+          // Determine status badge
+          let statusClass = 'status-none';
+          let statusText = 'Not Assigned';
+          if (forSelection && forSpares) {
+            statusClass = 'status-both';
+            statusText = '✓ For Selection & Spares';
+          } else if (forSelection) {
+            statusClass = 'status-selection';
+            statusText = '✓ For Selection';
+          } else if (forSpares) {
+            statusClass = 'status-spares';
+            statusText = '✓ For Pump Spares';
+          }
+
+          // Determine item class
+          let itemClass = '';
+          if (forSelection && forSpares) {
+            itemClass = 'for-both';
+          } else if (forSelection) {
+            itemClass = 'for-selection';
+          } else if (forSpares) {
+            itemClass = 'for-spares';
+          }
+          
+          filesHTML += `
+            <div class="file-item ${itemClass}">
+              <div class="file-info">
+                <div class="file-name">
+                  ${file.fileName}
+                  <span class="file-status ${statusClass}">
+                    ${statusText}
+                  </span>
+                </div>
+                <div class="file-meta">
+                  Uploaded: ${date} | Type: ${file.fileType || 'json'}
+                  <button class="action-button toggle-details-button" onclick="toggleFileDetails(${file.id})" id="toggleBtn-${file.id}">
+                    📊 View Details
+                  </button>
+                </div>
+              </div>
+              <div class="file-actions">
+                <button class="action-button for-selection-button ${forSelection ? 'active' : ''}" onclick="toggleForSelection(${file.id})">
+                  ${forSelection ? '✓ For Selection' : 'For Selection'}
+                </button>
+                <button class="action-button for-spares-button ${forSpares ? 'active' : ''}" onclick="toggleForSpares(${file.id})">
+                  ${forSpares ? '✓ For Pump Spares' : 'For Pump Spares'}
+                </button>
+                <button class="action-button view-button" onclick="viewFile(${file.id})">View File</button>
+                <button class="action-button download-button" onclick="downloadFileAsXLSX(${file.id}, '${file.fileName.replace(/'/g, "\\'")}')" title="Download as Excel (.xlsx)">
+                  📥 Download XLSX
+                </button>
+                <button class="action-button delete-button" onclick="deleteFile(${file.id}, '${file.fileName.replace(/'/g, "\\'")}')">Delete</button>
+              </div>
+              <div class="file-details" id="details-${file.id}">
+                <!-- Details will be loaded here -->
+              </div>
+            </div>
+          `;
+        });
+
+        filesHTML += '</div>';
+        filesContent.innerHTML = filesHTML;
+      } catch (error) {
+        console.error('Error loading database files:', error);
+        document.getElementById('filesContent').innerHTML = 
+          '<div class="no-files">Error loading files. Please try again.</div>';
+      }
+    }
+
+    async function toggleForSelection(fileId) {
+      try {
+        console.log('Toggling selection for file ID:', fileId);
+        const file = await pumpDB.getDatabaseFileById(fileId);
+        if (!file) {
+          showError('File not found.');
+          return;
+        }
+
+        console.log('Current file state:', {
+          id: file.id,
+          fileName: file.fileName,
+          forSelection: file.forSelection,
+          hasData: !!file.fileData,
+          dataLength: file.fileData ? file.fileData.length : 0
+        });
+
+        if (file.forSelection) {
+          console.log('Unassigning file from selection...');
+          await pumpDB.unassignFileFromSelection(fileId);
+          showSuccess('File unassigned from Selection.');
+        } else {
+          console.log('Assigning file for selection...');
+          const assignedFile = await pumpDB.assignFileForSelection(fileId);
+          console.log('Assignment result:', {
+            id: assignedFile.id,
+            fileName: assignedFile.fileName,
+            forSelection: assignedFile.forSelection,
+            hasData: !!assignedFile.fileData
+          });
+          
+          // Verify the assignment
+          const verifyFile = await pumpDB.getDatabaseFileById(fileId);
+          console.log('Verification after assignment:', {
+            id: verifyFile.id,
+            fileName: verifyFile.fileName,
+            forSelection: verifyFile.forSelection
+          });
+          
+          if (verifyFile.forSelection) {
+            showSuccess('File assigned for Selection! The Pump Selection page will now use this file.');
+          } else {
+            showError('Assignment may have failed. Please try again.');
+            console.error('Assignment verification failed - forSelection is still false');
+          }
+        }
+        await loadDatabaseFiles();
+      } catch (error) {
+        showError('Failed to update file assignment. Please try again.');
+        console.error('Error toggling selection assignment:', error);
+        console.error('Error details:', {
+          message: error.message,
+          stack: error.stack,
+          name: error.name
+        });
+      }
+    }
+
+    async function toggleForSpares(fileId) {
+      try {
+        const file = await pumpDB.getDatabaseFileById(fileId);
+        if (!file) {
+          showError('File not found.');
+          return;
+        }
+
+        if (file.forSpares) {
+          await pumpDB.unassignFileFromSpares(fileId);
+          showSuccess('File unassigned from Pump Spares.');
+        } else {
+          await pumpDB.assignFileForSpares(fileId);
+          showSuccess('File assigned for Pump Spares!');
+        }
+        await loadDatabaseFiles();
+      } catch (error) {
+        showError('Failed to update file assignment. Please try again.');
+        console.error('Error toggling spares assignment:', error);
+      }
+    }
+
+    async function viewFile(fileId) {
+      try {
+        const file = await pumpDB.getDatabaseFileById(fileId);
+        if (!file) {
+          showError('File not found.');
+          return;
+        }
+
+        // Parse JSON and display in new window
+        try {
+          const jsonData = JSON.parse(file.fileData);
+          const jsonString = JSON.stringify(jsonData, null, 2);
+          
+          // Create a new window with the JSON data
+          const newWindow = window.open('', '_blank');
+          newWindow.document.write(`
+            <html>
+              <head>
+                <title>${file.fileName}</title>
+                <style>
+                  body {
+                    font-family: monospace;
+                    padding: 20px;
+                    background-color: #f5f5f5;
+                  }
+                  pre {
+                    background-color: white;
+                    padding: 20px;
+                    border-radius: 8px;
+                    overflow-x: auto;
+                  }
+                </style>
+              </head>
+              <body>
+                <h1>${file.fileName}</h1>
+                <pre>${jsonString}</pre>
+              </body>
+            </html>
+          `);
+        } catch (e) {
+          showError('Failed to parse JSON file.');
+        }
+      } catch (error) {
+        showError('Failed to load file. Please try again.');
+        console.error('Error viewing file:', error);
+      }
+    }
+
+    function showError(message) {
+      const errorMessage = document.getElementById('errorMessage');
+      errorMessage.textContent = message;
+      errorMessage.classList.add('show');
+      setTimeout(() => {
+        errorMessage.classList.remove('show');
+      }, 5000);
+    }
+
+    function showSuccess(message) {
+      const successMessage = document.getElementById('successMessage');
+      successMessage.textContent = message;
+      successMessage.classList.add('show');
+      setTimeout(() => {
+        successMessage.classList.remove('show');
+      }, 3000);
+    }
+
+    async function downloadFileAsXLSX(fileId, fileName) {
+      try {
+        const file = await pumpDB.getDatabaseFileById(fileId);
+        if (!file) {
+          showError('File not found.');
+          return;
+        }
+
+        if (!file.fileData) {
+          showError('File has no data to download.');
+          return;
+        }
+
+        // Parse JSON data
+        let jsonData;
+        try {
+          jsonData = JSON.parse(file.fileData);
+        } catch (e) {
+          showError('Failed to parse file data. File may not be in JSON format.');
+          return;
+        }
+
+        // Convert JSON array to Excel format
+        // If data is an array of objects, use it directly
+        // If first element is a header row, separate it
+        let dataArray = jsonData;
+        let headers = null;
+
+        if (Array.isArray(jsonData) && jsonData.length > 0) {
+          // Check if first row looks like headers (all string values, no numbers)
+          const firstRow = jsonData[0];
+          if (typeof firstRow === 'object' && firstRow !== null) {
+            const firstRowValues = Object.values(firstRow);
+            const allStrings = firstRowValues.every(val => typeof val === 'string');
+            
+            // If first row looks like headers, use it as headers and skip it
+            if (allStrings && jsonData.length > 1) {
+              headers = Object.keys(firstRow);
+              dataArray = jsonData.slice(1);
+            } else {
+              // Use keys from first object as headers
+              headers = Object.keys(firstRow);
+            }
+          }
+        } else if (typeof jsonData === 'object' && jsonData !== null) {
+          // Single object - convert to array
+          dataArray = [jsonData];
+          headers = Object.keys(jsonData);
+        } else {
+          showError('File format not supported for Excel export.');
+          return;
+        }
+
+        // Create workbook
+        const wb = XLSX.utils.book_new();
+        
+        // Convert array of objects to worksheet
+        const ws = XLSX.utils.json_to_sheet(dataArray, { header: headers });
+        
+        // Add worksheet to workbook
+        XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
+        
+        // Generate Excel file
+        const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+        
+        // Create blob and download
+        const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        
+        // Generate filename (replace .json with .xlsx if needed)
+        let downloadFileName = fileName;
+        if (downloadFileName.toLowerCase().endsWith('.json')) {
+          downloadFileName = downloadFileName.replace(/\.json$/i, '.xlsx');
+        } else if (!downloadFileName.toLowerCase().endsWith('.xlsx')) {
+          downloadFileName = downloadFileName + '.xlsx';
+        }
+        
+        link.download = downloadFileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+        
+        showSuccess(`File "${downloadFileName}" downloaded successfully!`);
+      } catch (error) {
+        showError('Failed to download file. Please try again.');
+        console.error('Error downloading file:', error);
+      }
+    }
+
+    async function toggleFileDetails(fileId) {
+      const detailsDiv = document.getElementById(`details-${fileId}`);
+      const toggleBtn = document.getElementById(`toggleBtn-${fileId}`);
+      
+      if (detailsDiv.classList.contains('show')) {
+        // Hide details
+        detailsDiv.classList.remove('show');
+        toggleBtn.textContent = '📊 View Details';
+      } else {
+        // Show details - load file info
+        if (!detailsDiv.dataset.loaded) {
+          await loadFileDetails(fileId);
+          detailsDiv.dataset.loaded = 'true';
+        }
+        detailsDiv.classList.add('show');
+        toggleBtn.textContent = '📊 Hide Details';
+      }
+    }
+
+    async function loadFileDetails(fileId) {
+      try {
+        const file = await pumpDB.getDatabaseFileById(fileId);
+        if (!file || !file.fileData) {
+          return;
+        }
+
+        const jsonData = JSON.parse(file.fileData);
+        const detailsDiv = document.getElementById(`details-${fileId}`);
+        
+        if (!Array.isArray(jsonData) || jsonData.length === 0) {
+          detailsDiv.innerHTML = '<div style="color: #666; font-size: 0.9em;">No data available to analyze.</div>';
+          return;
+        }
+
+        // Get all unique column names
+        const allColumns = new Set();
+        jsonData.forEach(row => {
+          if (typeof row === 'object' && row !== null) {
+            Object.keys(row).forEach(key => allColumns.add(key));
+          }
+        });
+
+        // Analyze each column
+        const columnAnalysis = {};
+        Array.from(allColumns).forEach(columnName => {
+          const values = new Set();
+          const sampleValues = [];
+          
+          jsonData.forEach(row => {
+            if (row && row[columnName] !== null && row[columnName] !== undefined && row[columnName] !== '') {
+              const value = String(row[columnName]).trim();
+              if (value) {
+                values.add(value);
+                if (sampleValues.length < 10) {
+                  sampleValues.push(value);
+                }
+              }
+            }
+          });
+
+          columnAnalysis[columnName] = {
+            uniqueCount: values.size,
+            sampleValues: sampleValues,
+            allValues: Array.from(values).sort()
+          };
+        });
+
+        // Find model column and extract models
+        let modelColumn = null;
+        let models = [];
+        
+        Array.from(allColumns).forEach(col => {
+          const lowerCol = col.toLowerCase().trim();
+          if (lowerCol === 'model' || lowerCol === 'model name' || lowerCol.includes('model')) {
+            if (!modelColumn || lowerCol === 'model' || lowerCol === 'model name') {
+              modelColumn = col;
+            }
+          }
+        });
+
+        if (modelColumn) {
+          const modelSet = new Set();
+          jsonData.forEach(row => {
+            if (row && row[modelColumn]) {
+              const model = String(row[modelColumn]).trim();
+              if (model) {
+                modelSet.add(model);
+              }
+            }
+          });
+          models = Array.from(modelSet).sort();
+        }
+
+        // Build HTML
+        let detailsHTML = '<div class="details-header">📋 File Structure Analysis</div>';
+        
+        // Show models if found
+        if (models.length > 0) {
+          detailsHTML += `
+            <div class="models-section">
+              <div style="font-weight: 600; color: #2e7d32; margin-bottom: 8px;">
+                🏷️ Models Found (${models.length}):
+              </div>
+              <div class="models-list">
+                ${models.map(model => `<span class="model-badge">${model}</span>`).join('')}
+              </div>
+            </div>
+          `;
+        }
+
+        // Show columns
+        detailsHTML += `
+          <div style="margin-top: 15px;">
+            <div style="font-weight: 600; color: #003366; margin-bottom: 10px;">
+              📊 Columns (${allColumns.size}):
+            </div>
+            <div class="columns-grid">
+        `;
+
+        Array.from(allColumns).sort().forEach(columnName => {
+          const analysis = columnAnalysis[columnName];
+          const isModelColumn = modelColumn && (columnName === modelColumn || columnName.trim().toLowerCase() === modelColumn.trim().toLowerCase());
+          
+          detailsHTML += `
+            <div class="column-card" style="border-left-color: ${isModelColumn ? '#4caf50' : '#2196f3'};">
+              <div class="column-name">
+                ${columnName}
+                ${isModelColumn ? ' 🏷️' : ''}
+              </div>
+              <div class="column-values">
+                <div style="color: #999; font-size: 0.8em; margin-bottom: 5px;">
+                  ${analysis.uniqueCount} unique value${analysis.uniqueCount !== 1 ? 's' : ''}
+                </div>
+                ${analysis.sampleValues.length > 0 ? `
+                  <div style="max-height: 80px; overflow-y: auto;">
+                    ${analysis.sampleValues.map(val => `
+                      <div class="column-value-item">• ${val.length > 30 ? val.substring(0, 30) + '...' : val}</div>
+                    `).join('')}
+                    ${analysis.uniqueCount > 10 ? `<div style="color: #999; font-style: italic; margin-top: 5px;">... and ${analysis.uniqueCount - 10} more</div>` : ''}
+                  </div>
+                ` : '<div style="color: #999; font-style: italic;">(empty)</div>'}
+              </div>
+            </div>
+          `;
+        });
+
+        detailsHTML += `
+            </div>
+          </div>
+        `;
+
+        detailsDiv.innerHTML = detailsHTML;
+      } catch (error) {
+        console.error('Error loading file details:', error);
+        const detailsDiv = document.getElementById(`details-${fileId}`);
+        detailsDiv.innerHTML = '<div style="color: #c62828; font-size: 0.9em;">Error analyzing file structure.</div>';
+      }
+    }
+
+    async function deleteFile(fileId, fileName) {
+      // Confirm deletion
+      if (!confirm(`Are you sure you want to delete "${fileName}"?\n\nThis action cannot be undone.`)) {
+        return;
+      }
+
+      try {
+        await pumpDB.deleteDatabaseFile(fileId);
+        showSuccess('File deleted successfully!');
+        await loadDatabaseFiles();
+      } catch (error) {
+        showError('Failed to delete file. Please try again.');
+        console.error('Error deleting file:', error);
+      }
+    }
+
+  </script>
+</body>
+</html>
+
