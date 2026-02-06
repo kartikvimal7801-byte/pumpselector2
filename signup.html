@@ -285,25 +285,18 @@
       submitButton.disabled = true;
       submitButton.textContent = 'Creating Account...';
       
-      try {
-        const result = await authManager.signup(fullName, email, phone, password);
+      const result = await authManager.signup(fullName, email, phone, password);
+      
+      if (result.success) {
+        successMessage.textContent = 'Account created successfully! Redirecting to login...';
+        successMessage.classList.add('show');
         
-        if (result.success) {
-          successMessage.textContent = 'Account created successfully! Redirecting to login...';
-          successMessage.classList.add('show');
-          
-          // Redirect to login page after 2 seconds
-          setTimeout(() => {
-            window.location.href = 'login.html';
-          }, 2000);
-        } else {
-          errorMessage.textContent = result.message || 'Signup failed. Please try again.';
-          errorMessage.classList.add('show');
-          submitButton.disabled = false;
-          submitButton.textContent = 'Sign Up';
-        }
-      } catch (error) {
-        errorMessage.textContent = 'An error occurred. Please try again.';
+        // Redirect to login page after 2 seconds
+        setTimeout(() => {
+          window.location.href = 'login.html';
+        }, 2000);
+      } else {
+        errorMessage.textContent = result.message || 'Signup failed. Please try again.';
         errorMessage.classList.add('show');
         submitButton.disabled = false;
         submitButton.textContent = 'Sign Up';

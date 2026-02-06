@@ -42,128 +42,144 @@ class PumpDatabase {
 
   // Initialize database
   async init() {
+    // If already initialized, return immediately
+    if (this.db && this.db.close) {
+      return this.db;
+    }
+    
     return new Promise((resolve, reject) => {
-      const request = indexedDB.open(this.dbName, this.dbVersion);
+      try {
+        const request = indexedDB.open(this.dbName, this.dbVersion);
 
-      request.onerror = () => reject(request.error);
-      request.onsuccess = () => {
-        this.db = request.result;
-        resolve(this.db);
-      };
+        request.onerror = () => {
+          console.error('[DB] Open error:', request.error);
+          reject(request.error);
+        };
+        
+        request.onsuccess = () => {
+          this.db = request.result;
+          console.log('[DB] Database opened successfully');
+          resolve(this.db);
+        };
 
-      request.onupgradeneeded = (event) => {
-        const db = event.target.result;
-        const oldVersion = event.oldVersion;
+        request.onupgradeneeded = (event) => {
+          const db = event.target.result;
+          const oldVersion = event.oldVersion;
+          console.log('[DB] Upgrading database from version', oldVersion, 'to', this.dbVersion);
 
-        // Store for pump selections (selection.html)
-        if (!db.objectStoreNames.contains('pumpSelections')) {
-          const selectionStore = db.createObjectStore('pumpSelections', {
-            keyPath: 'id',
-            autoIncrement: true
-          });
-          selectionStore.createIndex('timestamp', 'timestamp', { unique: false });
-          selectionStore.createIndex('purpose', 'purpose', { unique: false });
-          selectionStore.createIndex('mode', 'mode', { unique: false });
-        }
+          // Store for pump selections (selection.html)
+          if (!db.objectStoreNames.contains('pumpSelections')) {
+            const selectionStore = db.createObjectStore('pumpSelections', {
+              keyPath: 'id',
+              autoIncrement: true
+            });
+            selectionStore.createIndex('timestamp', 'timestamp', { unique: false });
+            selectionStore.createIndex('purpose', 'purpose', { unique: false });
+            selectionStore.createIndex('mode', 'mode', { unique: false });
+          }
 
-        // Store for pump problems (Wealthness.html)
-        if (!db.objectStoreNames.contains('pumpProblems')) {
-          const problemStore = db.createObjectStore('pumpProblems', {
-            keyPath: 'id',
-            autoIncrement: true
-          });
-          problemStore.createIndex('timestamp', 'timestamp', { unique: false });
-          problemStore.createIndex('pumpType', 'pumpType', { unique: false });
-          problemStore.createIndex('problem', 'problem', { unique: false });
-        }
+          // Store for pump problems (Wealthness.html)
+          if (!db.objectStoreNames.contains('pumpProblems')) {
+            const problemStore = db.createObjectStore('pumpProblems', {
+              keyPath: 'id',
+              autoIncrement: true
+            });
+            problemStore.createIndex('timestamp', 'timestamp', { unique: false });
+            problemStore.createIndex('pumpType', 'pumpType', { unique: false });
+            problemStore.createIndex('problem', 'problem', { unique: false });
+          }
 
-        // Store for pump recommendations
-        if (!db.objectStoreNames.contains('pumpRecommendations')) {
-          const recommendationStore = db.createObjectStore('pumpRecommendations', {
-            keyPath: 'id',
-            autoIncrement: true
-          });
-          recommendationStore.createIndex('timestamp', 'timestamp', { unique: false });
-          recommendationStore.createIndex('selectionId', 'selectionId', { unique: false });
-        }
+          // Store for pump recommendations
+          if (!db.objectStoreNames.contains('pumpRecommendations')) {
+            const recommendationStore = db.createObjectStore('pumpRecommendations', {
+              keyPath: 'id',
+              autoIncrement: true
+            });
+            recommendationStore.createIndex('timestamp', 'timestamp', { unique: false });
+            recommendationStore.createIndex('selectionId', 'selectionId', { unique: false });
+          }
 
-        // Store for analytics/statistics
-        if (!db.objectStoreNames.contains('analytics')) {
-          const analyticsStore = db.createObjectStore('analytics', {
-            keyPath: 'id',
-            autoIncrement: true
-          });
-          analyticsStore.createIndex('date', 'date', { unique: false });
-          analyticsStore.createIndex('type', 'type', { unique: false });
-        }
+          // Store for analytics/statistics
+          if (!db.objectStoreNames.contains('analytics')) {
+            const analyticsStore = db.createObjectStore('analytics', {
+              keyPath: 'id',
+              autoIncrement: true
+            });
+            analyticsStore.createIndex('date', 'date', { unique: false });
+            analyticsStore.createIndex('type', 'type', { unique: false });
+          }
 
-        // NEW: Store for internal logs (backend only)
-        if (!db.objectStoreNames.contains('internalLogs')) {
-          const logStore = db.createObjectStore('internalLogs', {
-            keyPath: 'id',
-            autoIncrement: true
-          });
-          logStore.createIndex('timestamp', 'timestamp', { unique: false });
-          logStore.createIndex('level', 'level', { unique: false });
-        }
+          // NEW: Store for internal logs (backend only)
+          if (!db.objectStoreNames.contains('internalLogs')) {
+            const logStore = db.createObjectStore('internalLogs', {
+              keyPath: 'id',
+              autoIncrement: true
+            });
+            logStore.createIndex('timestamp', 'timestamp', { unique: false });
+            logStore.createIndex('level', 'level', { unique: false });
+          }
 
-        // NEW: Store for sync queue (background operations)
-        if (!db.objectStoreNames.contains('syncQueue')) {
-          const syncStore = db.createObjectStore('syncQueue', {
-            keyPath: 'id',
-            autoIncrement: true
-          });
-          syncStore.createIndex('timestamp', 'timestamp', { unique: false });
-          syncStore.createIndex('status', 'status', { unique: false });
-        }
+          // NEW: Store for sync queue (background operations)
+          if (!db.objectStoreNames.contains('syncQueue')) {
+            const syncStore = db.createObjectStore('syncQueue', {
+              keyPath: 'id',
+              autoIncrement: true
+            });
+            syncStore.createIndex('timestamp', 'timestamp', { unique: false });
+            syncStore.createIndex('status', 'status', { unique: false });
+          }
 
-        // NEW: Store for data integrity checks
-        if (!db.objectStoreNames.contains('integrityChecks')) {
-          const integrityStore = db.createObjectStore('integrityChecks', {
-            keyPath: 'id',
-            autoIncrement: true
-          });
-          integrityStore.createIndex('timestamp', 'timestamp', { unique: false });
-          integrityStore.createIndex('checkType', 'checkType', { unique: false });
-        }
+          // NEW: Store for data integrity checks
+          if (!db.objectStoreNames.contains('integrityChecks')) {
+            const integrityStore = db.createObjectStore('integrityChecks', {
+              keyPath: 'id',
+              autoIncrement: true
+            });
+            integrityStore.createIndex('timestamp', 'timestamp', { unique: false });
+            integrityStore.createIndex('checkType', 'checkType', { unique: false });
+          }
 
-        // NEW: Store for users (authentication)
-        if (!db.objectStoreNames.contains('users')) {
-          const userStore = db.createObjectStore('users', {
-            keyPath: 'id',
-            autoIncrement: true
-          });
-          userStore.createIndex('email', 'email', { unique: true });
-          userStore.createIndex('phone', 'phone', { unique: false });
-          userStore.createIndex('timestamp', 'timestamp', { unique: false });
-        }
+          // NEW: Store for users (authentication)
+          if (!db.objectStoreNames.contains('users')) {
+            const userStore = db.createObjectStore('users', {
+              keyPath: 'id',
+              autoIncrement: true
+            });
+            userStore.createIndex('email', 'email', { unique: true });
+            userStore.createIndex('phone', 'phone', { unique: false });
+            userStore.createIndex('timestamp', 'timestamp', { unique: false });
+          }
 
-         // NEW: Store for database files (pump data files)
-         if (!db.objectStoreNames.contains('databaseFiles')) {
-           const dbFileStore = db.createObjectStore('databaseFiles', {
-             keyPath: 'id',
-             autoIncrement: true
-           });
-           dbFileStore.createIndex('timestamp', 'timestamp', { unique: false });
-           dbFileStore.createIndex('isActive', 'isActive', { unique: false });
-           dbFileStore.createIndex('fileName', 'fileName', { unique: false });
-           dbFileStore.createIndex('forSelection', 'forSelection', { unique: false });
-           dbFileStore.createIndex('forSpares', 'forSpares', { unique: false });
-         }
+          // NEW: Store for database files (pump data files)
+          if (!db.objectStoreNames.contains('databaseFiles')) {
+            const dbFileStore = db.createObjectStore('databaseFiles', {
+              keyPath: 'id',
+              autoIncrement: true
+            });
+            dbFileStore.createIndex('timestamp', 'timestamp', { unique: false });
+            dbFileStore.createIndex('isActive', 'isActive', { unique: false });
+            dbFileStore.createIndex('fileName', 'fileName', { unique: false });
+            dbFileStore.createIndex('forSelection', 'forSelection', { unique: false });
+            dbFileStore.createIndex('forSpares', 'forSpares', { unique: false });
+          }
 
-        // NEW: Store for orders (pump selections that became orders)
-        if (!db.objectStoreNames.contains('orders')) {
-          const orderStore = db.createObjectStore('orders', {
-            keyPath: 'id',
-            autoIncrement: true
-          });
-          orderStore.createIndex('timestamp', 'timestamp', { unique: false });
-          orderStore.createIndex('userId', 'userId', { unique: false });
-          orderStore.createIndex('status', 'status', { unique: false });
-        }
+          // NEW: Store for orders (pump selections that became orders)
+          if (!db.objectStoreNames.contains('orders')) {
+            const orderStore = db.createObjectStore('orders', {
+              keyPath: 'id',
+              autoIncrement: true
+            });
+            orderStore.createIndex('timestamp', 'timestamp', { unique: false });
+            orderStore.createIndex('userId', 'userId', { unique: false });
+            orderStore.createIndex('status', 'status', { unique: false });
+          }
 
-        this._log('info', 'Database schema upgraded', { oldVersion, newVersion: this.dbVersion });
-      };
+          this._log('info', 'Database schema upgraded', { oldVersion, newVersion: this.dbVersion });
+        };
+      } catch (error) {
+        console.error('[DB] Init error:', error);
+        reject(error);
+      }
     });
   }
 
@@ -1143,21 +1159,29 @@ class PumpDatabase {
             
             // If data is stored as blob, convert back to text
             if (selectionFile.isBlob && selectionFile.fileData instanceof Blob) {
-              try {
-                selectionFile.fileData = await this._blobToText(selectionFile.fileData);
-                console.log('Converted blob back to text');
-              } catch (error) {
-                console.error('Failed to convert blob to text:', error);
-                throw new Error('Failed to read stored file data');
-              }
+              this._blobToText(selectionFile.fileData)
+                .then(text => {
+                  selectionFile.fileData = text;
+                  console.log('Converted blob back to text');
+                  this._log('info', 'Get file for selection', { 
+                    found: true, 
+                    fileName: selectionFile.fileName,
+                    fileId: selectionFile.id
+                  });
+                  resolve(selectionFile);
+                })
+                .catch(error => {
+                  console.error('Failed to convert blob to text:', error);
+                  reject(new Error('Failed to read stored file data'));
+                });
+            } else {
+              this._log('info', 'Get file for selection', { 
+                found: true, 
+                fileName: selectionFile.fileName,
+                fileId: selectionFile.id
+              });
+              resolve(selectionFile);
             }
-            
-            this._log('info', 'Get file for selection', { 
-              found: true, 
-              fileName: selectionFile.fileName,
-              fileId: selectionFile.id
-            });
-            resolve(selectionFile);
           } else {
             console.log('No file with forSelection=true found');
             this._log('info', 'Get file for selection', { found: false });
@@ -1639,6 +1663,7 @@ const pumpDB = new PumpDatabase();
 if (typeof window !== 'undefined') {
   pumpDB.init()
     .then(() => {
+      console.log('[DB] Database initialized successfully');
       // Start background maintenance scheduler (users won't see this)
       // pumpDB._startMaintenanceScheduler();
       
@@ -1650,8 +1675,16 @@ if (typeof window !== 'undefined') {
       // }, 5000);
     })
     .catch(err => {
-      // Only log to console (backend error, user won't see)
-      console.error('[DB] Initialization error:', err);
+      // Log detailed error information for debugging
+      console.error('[DB] Initialization error:', err?.message || err);
+      console.error('[DB] Full error details:', err);
+      
+      // Try to provide helpful information
+      if (err?.message?.includes('not available')) {
+        console.error('[DB] IndexedDB is disabled or not available. Check browser privacy settings.');
+      } else if (err?.name === 'QuotaExceededError') {
+        console.error('[DB] Storage quota exceeded. Try clearing browser cache.');
+      }
     });
 }
 

@@ -314,32 +314,25 @@
       submitButton.disabled = true;
       submitButton.textContent = 'Signing In...';
       
-      try {
-        const result = await authManager.login(emailInput.value.trim(), passwordInput.value);
+      const result = await authManager.login(emailInput.value.trim(), passwordInput.value);
+      
+      if (result.success) {
+        userInfo.textContent = `Welcome back, ${result.user.fullName}! Redirecting...`;
+        userInfo.classList.add('show');
         
-        if (result.success) {
-          userInfo.textContent = `Welcome back, ${result.user.fullName}! Redirecting...`;
-          userInfo.classList.add('show');
-          
-          // Redirect to home page after 1.5 seconds
-          setTimeout(() => {
-            window.location.href = 'index.html';
-          }, 1500);
-        } else {
-          errorMessage.textContent = result.message || 'Invalid email or password. Please try again.';
-          errorMessage.classList.add('show');
-          submitButton.disabled = false;
-          submitButton.textContent = 'Sign In';
-        }
-      } catch (error) {
-        errorMessage.textContent = 'An error occurred. Please try again.';
+        // Redirect to home page after 1.5 seconds
+        setTimeout(() => {
+          window.location.href = 'index.html';
+        }, 1500);
+      } else {
+        errorMessage.textContent = result.message || 'Invalid email or password. Please try again.';
         errorMessage.classList.add('show');
         submitButton.disabled = false;
         submitButton.textContent = 'Sign In';
       }
     });
 
-    // Test Account Button - Bypass signup and login
+    // Test Account Button - Create and login
     document.getElementById('testButton').addEventListener('click', async function() {
       const errorMessage = document.getElementById('errorMessage');
       const userInfo = document.getElementById('userInfo');
@@ -369,7 +362,7 @@
             fullName: 'test account',
             email: testEmail,
             phone: '0000000000',
-            password: 'test123' // Temporary password
+            password: 'test123'
           });
         }
         
@@ -385,13 +378,13 @@
             window.location.href = 'index.html';
           }, 1500);
         } else {
-          errorMessage.textContent = 'Failed to login as test account. Please try again.';
+          errorMessage.textContent = result.message || 'Failed to login. Please try again.';
           errorMessage.classList.add('show');
           testButton.disabled = false;
           testButton.textContent = '🧪 Test Account';
         }
       } catch (error) {
-        console.error('Test account login error:', error);
+        console.error('Test account error:', error);
         errorMessage.textContent = 'An error occurred. Please try again.';
         errorMessage.classList.add('show');
         testButton.disabled = false;
@@ -418,25 +411,18 @@
       submitButton.disabled = true;
       submitButton.textContent = 'Signing In...';
       
-      try {
-        const result = await authManager.login(email, password);
+      const result = await authManager.login(email, password);
+      
+      if (result.success) {
+        userInfo.textContent = `Welcome back, ${result.user.fullName}! Redirecting...`;
+        userInfo.classList.add('show');
         
-        if (result.success) {
-          userInfo.textContent = `Welcome back, ${result.user.fullName}! Redirecting...`;
-          userInfo.classList.add('show');
-          
-          // Redirect to home page after 1.5 seconds
-          setTimeout(() => {
-            window.location.href = 'index.html';
-          }, 1500);
-        } else {
-          errorMessage.textContent = result.message || 'Invalid email or password. Please try again.';
-          errorMessage.classList.add('show');
-          submitButton.disabled = false;
-          submitButton.textContent = 'Sign In';
-        }
-      } catch (error) {
-        errorMessage.textContent = 'An error occurred. Please try again.';
+        // Redirect to home page after 1.5 seconds
+        setTimeout(() => {
+          window.location.href = 'index.html';
+        }, 1500);
+      } else {
+        errorMessage.textContent = result.message || 'Invalid email or password. Please try again.';
         errorMessage.classList.add('show');
         submitButton.disabled = false;
         submitButton.textContent = 'Sign In';
